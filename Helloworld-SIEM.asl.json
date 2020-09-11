@@ -1,0 +1,135 @@
+{
+  "Comment": "Пример плейбука в нотации ASL/CQRS на основе кейса ЭР-Телеком",
+  "StartAt": "Query: get SIEM data",
+  "States": {
+    "Query: get SIEM data": {
+      "Comment": "Получаем сырые события из SIEM",
+      "Type": "Task",
+      "Resource": "null",
+      "Next": "Get DHCP and DNS"
+    },
+    "Get DHCP and DNS": {
+      "Type": "Parallel",
+      "Next": "Command: store Asset-IP-Time",
+      "Branches": [
+        {
+          "StartAt": "Query: get DHCP data",
+          "States": {
+            "Query: get DHCP data": {
+              "Comment": "Получаем данные от DHCP",
+              "Type": "Task",
+              "Resource": "null",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Query: get DNS data",
+          "States": {
+            "Query: get DNS data": {
+              "Comment": "Получаем данные от DNS",
+              "Type": "Task",
+              "Resource": "null",
+              "End": true
+            }
+          }
+        }
+      ]
+    },
+    "Command: store Asset-IP-Time": {
+      "Comment": "Сохраняем информацию об Asset-IP-Time",
+      "Type": "Task",
+      "Resource": "null",
+      "Next": "Collect incident data"
+    },
+    "Collect incident data": {
+      "Type": "Parallel",
+      "Next": "Query: generate instructions for IC officer",
+      "Branches": [
+        {
+          "StartAt": "Query: get similar incidents on this Asset",
+          "States": {
+            "Query: get similar incidents on this Asset": {
+              "Comment": "Получаем информацию об аналогичных инцидентах на данном Asset за последние 14 дней",
+              "Type": "Task",
+              "Resource": "null",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Query: get info about Destination IP",
+          "States": {
+            "Query: get info about Destination IP": {
+              "Comment": "Получаем информацию о Destination IP",
+              "Type": "Task",
+              "Resource": "null",
+              "Next": "Are anonymizers used?"
+            },
+            "Are anonymizers used?": {
+              "Type" : "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.foo",
+                  "BooleanEquals": true,
+                  "Next": "Command: change user's AD group"
+                }
+              ],
+              "Default": "No anonymizers used"
+            },
+            "Command: change user's AD group": {
+              "Comment": "Изменить группы AD для УЗ сотрудника",
+              "Type": "Task",
+              "Resource": "null",
+              "End": true
+            },
+            "No anonymizers used": {
+              "Type" : "Pass",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Query: get info about Asset protection",
+          "States": {
+            "Query: get info about Asset protection": {
+              "Comment": "Собрать информацию о состоянии защиты Asset",
+              "Type": "Task",
+              "Resource": "null",
+              "End": true
+            }
+          }
+        }
+      ]
+    },
+    "Query: generate instructions for IC officer": {
+      "Comment": "Сформировать указания для дежурного сотрудника ИБ",
+      "Type": "Task",
+      "Resource": "null",
+      "Next": "Any inconsistencies?"
+    },
+    "Any inconsistencies?": {
+      "Type" : "Choice",
+      "Choices": [
+        {
+          "Variable": "$.foo",
+          "BooleanEquals": true,
+          "Next": "Command: form a ticket"
+        }
+      ],
+      "Default": "Command: form an incident"
+    },
+    "Command: form a ticket": {
+      "Comment": "Создать заявку в SD на устранение несоответствий",
+      "Type": "Task",
+      "Resource": "null",
+      "End": true
+    },
+    "Command: form an incident": {
+      "Comment": "Создать заявку в SD по инциденту",
+      "Type": "Task",
+      "Resource": "null",
+      "End": true
+    }
+  }
+}
